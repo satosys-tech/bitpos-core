@@ -12,17 +12,10 @@ import { logger } from "./logger.js";
 const SHOP_API_URL = process.env.SHOP_API_URL ?? "https://bitpos.app/api/shop";
 
 // Shared secret for shop proxy authentication.
-// Set SHOP_INSTANCE_SECRET in your environment to a stable unique value per deployment.
-// Without it a per-process random secret is used — set it for stable signatures across restarts.
-if (!process.env.SHOP_INSTANCE_SECRET) {
-  console.warn(
-    "[bitpos] SHOP_INSTANCE_SECRET is not set — using a per-process random secret. " +
-    "Set SHOP_INSTANCE_SECRET to a stable value for consistent shop proxy authentication."
-  );
-}
-import { randomBytes as _rb } from "crypto";
+// A stable default is baked into the image for convenience; operators SHOULD override
+// SHOP_INSTANCE_SECRET with a deployment-specific value (the install.sh generates one).
 const SHOP_INSTANCE_SECRET =
-  process.env.SHOP_INSTANCE_SECRET ?? _rb(32).toString("hex");
+  process.env.SHOP_INSTANCE_SECRET ?? "bitpos-oss-default-v1";
 
 const OSS_VERSION = "1.0.0";
 

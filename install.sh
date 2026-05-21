@@ -53,6 +53,7 @@ fi
 # Generate secrets
 SESSION_SECRET="$(openssl rand -hex 32 2>/dev/null || head -c 32 /dev/urandom | xxd -p)"
 ENCRYPTION_KEY="$(openssl rand -hex 16 2>/dev/null || head -c 16 /dev/urandom | xxd -p)"
+SHOP_INSTANCE_SECRET="$(openssl rand -hex 24 2>/dev/null || head -c 24 /dev/urandom | xxd -p)"
 
 # Write .env
 cat > .env <<ENVEOF
@@ -60,6 +61,7 @@ NWC_URL=${NWC_URL}
 DOMAIN=${DOMAIN}
 SESSION_SECRET=${SESSION_SECRET}
 ENCRYPTION_KEY=${ENCRYPTION_KEY}
+SHOP_INSTANCE_SECRET=${SHOP_INSTANCE_SECRET}
 ENVEOF
 
 # Write docker-compose.yml (self-contained, no external fetch needed)
