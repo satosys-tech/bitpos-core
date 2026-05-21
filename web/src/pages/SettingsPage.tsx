@@ -123,7 +123,7 @@ export default function SettingsPage() {
       </div>
 
       <p className="text-center text-xs text-muted-foreground mt-6">
-        bitPOS OSS — self-hosted Lightning POS
+        bitPOS OSS - self-hosted Lightning POS
       </p>
     </div>
   );

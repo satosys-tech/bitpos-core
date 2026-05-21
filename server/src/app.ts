@@ -44,7 +44,7 @@ app.use(lnurlpRouter);
 // LNURLw: card tap + callback at root (NFC wallets call these directly)
 app.use(lnurlwRouter);
 
-// PIN session (public — no auth required)
+// PIN session (public - no auth required)
 app.use("/api", pinSessionsRouter);
 
 // All other API routes

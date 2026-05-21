@@ -158,7 +158,7 @@ router.get("/card/:cardId/callback", async (req, res): Promise<void> => {
     .where(eq(cardsTable.id, cardId));
 
   if (cardRow?.status === "frozen") {
-    res.json({ status: "ERROR", reason: "Card is frozen — unfreeze it in the bitPOS app to pay" });
+    res.json({ status: "ERROR", reason: "Card is frozen - unfreeze it in the bitPOS app to pay" });
     return;
   }
 
@@ -243,7 +243,7 @@ router.get("/card/:cardId/callback", async (req, res): Promise<void> => {
         const newFailCount = pinFailCount + 1;
         if (newFailCount >= 3) {
           await db.update(cardsTable).set({ pinFailCount: newFailCount, pinLockedAt: new Date() }).where(eq(cardsTable.id, cardId));
-          res.json({ status: "ERROR", reason: "Incorrect PIN. Card is now locked — unlock it in the app." });
+          res.json({ status: "ERROR", reason: "Incorrect PIN. Card is now locked - unlock it in the app." });
         } else {
           await db.update(cardsTable).set({ pinFailCount: newFailCount }).where(eq(cardsTable.id, cardId));
           res.json({ status: "ERROR", reason: `Incorrect PIN. ${3 - newFailCount} attempt(s) remaining.` });
@@ -255,7 +255,7 @@ router.get("/card/:cardId/callback", async (req, res): Promise<void> => {
     }
   }
 
-  // OSS: all payments are external via NWC (no in-network transfer — single user)
+  // OSS: all payments are external via NWC (no in-network transfer - single user)
   if (accountRow.balanceSats < amountSats) {
     res.json({ status: "ERROR", reason: "Insufficient balance" });
     return;

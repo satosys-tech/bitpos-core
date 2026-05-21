@@ -65,7 +65,7 @@ router.get("/wipe/:token", async (req, res): Promise<void> => {
   }).where(eq(cardsTable.id, card.id));
 
   const newProvisionUrl = `https://${DOMAIN}/api/provision/${newProvisionToken}`;
-  logger.info({ cardId: card.id }, "Bolt Card wipe served — keys rotated");
+  logger.info({ cardId: card.id }, "Bolt Card wipe served - keys rotated");
 
   res.json({
     protocol_name: "wipe_bolt_card_response",

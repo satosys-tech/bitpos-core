@@ -3,7 +3,7 @@ import { randomBytes } from "crypto";
 
 if (!process.env.SESSION_SECRET) {
   console.warn(
-    "[bitpos] SESSION_SECRET is not set — using a randomly generated secret. " +
+    "[bitpos] SESSION_SECRET is not set - using a randomly generated secret. " +
     "Sessions will be invalidated on every restart. Set SESSION_SECRET for persistence."
   );
 }

@@ -1,9 +1,9 @@
 /**
  * Authentication routes for single-user OSS edition.
- * POST /api/auth/login   — { pin } — no handle needed (single user)
- * POST /api/auth/refresh — uses refresh_token cookie
- * POST /api/auth/logout  — clears cookie
- * GET  /api/auth/me      — returns entity + account info
+ * POST /api/auth/login   - { pin } - no handle needed (single user)
+ * POST /api/auth/refresh - uses refresh_token cookie
+ * POST /api/auth/logout  - clears cookie
+ * GET  /api/auth/me      - returns entity + account info
  */
 import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";

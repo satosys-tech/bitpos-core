@@ -1,6 +1,6 @@
 /**
  * Simplified outbound Lightning payment processor for single-user OSS edition.
- * No fee engine — the user's NWC pays directly, no platform fee deducted.
+ * No fee engine - the user's NWC pays directly, no platform fee deducted.
  */
 import { db, accountsTable, transactionsTable } from "../db/index.js";
 import { and, eq, gte, sql } from "drizzle-orm";

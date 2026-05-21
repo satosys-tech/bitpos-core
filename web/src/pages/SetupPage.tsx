@@ -150,7 +150,7 @@ export default function SetupPage() {
               onChange={async (v) => {
                 setConfirmPin(v);
                 if (v.length === 4) {
-                  if (v !== pin) { setError("PINs don't match — try again"); setConfirmPin(""); setStep("pin"); setPin(""); }
+                  if (v !== pin) { setError("PINs don't match - try again"); setConfirmPin(""); setStep("pin"); setPin(""); }
                   else {
                     setLoading(true);
                     setError("");

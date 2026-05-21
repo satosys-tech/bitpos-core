@@ -1,7 +1,7 @@
 /**
  * First-boot setup endpoint.
- * GET  /api/setup-status   — returns { configured: boolean }
- * POST /api/setup          — { pin, handle? } — creates the single entity + account, returns JWT
+ * GET  /api/setup-status   - returns { configured: boolean }
+ * POST /api/setup          - { pin, handle? } - creates the single entity + account, returns JWT
  */
 import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
@@ -18,7 +18,7 @@ router.get("/setup-status", async (_req, res): Promise<void> => {
   res.json({ configured });
 });
 
-// GET /api/nwc-status — live check that the NWC wallet is reachable
+// GET /api/nwc-status - live check that the NWC wallet is reachable
 router.get("/nwc-status", async (_req, res): Promise<void> => {
   if (!isConfigured()) {
     res.json({ connected: false, error: "NWC_URL is not set" });

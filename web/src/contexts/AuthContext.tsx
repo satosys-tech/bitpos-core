@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch { /* ignore */ }
 
-      // Not logged in — check if setup is needed
+      // Not logged in - check if setup is needed
       try {
         const s = await fetch("/api/setup-status");
         if (s.ok) {

@@ -17,7 +17,7 @@ const DATABASE_URL = process.env.DATABASE_URL ?? "postgresql://postgres:postgres
 
 if (!process.env.DATABASE_URL) {
   console.warn(
-    "[bitpos] DATABASE_URL is not set — defaulting to postgresql://postgres:postgres@localhost:5432/bitpos. " +
+    "[bitpos] DATABASE_URL is not set - defaulting to postgresql://postgres:postgres@localhost:5432/bitpos. " +
     "Set DATABASE_URL to connect to your Postgres instance."
   );
 }

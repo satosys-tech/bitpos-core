@@ -45,16 +45,16 @@ router.post("/pin-session/:id/authorize", async (req, res): Promise<void> => {
   if (!session) { res.status(404).json({ status: "ERROR", reason: "Session not found" }); return; }
   if (session.status === "authorized") { res.json({ status: "OK", reason: "Already authorized" }); return; }
   if (session.status === "processing") {
-    res.status(409).json({ status: "PENDING", reason: "Payment already in progress — please wait" });
+    res.status(409).json({ status: "PENDING", reason: "Payment already in progress - please wait" });
     return;
   }
   if (session.status === "expired" || new Date() > new Date(session.expiresAt)) {
     await db.update(pinPaymentSessionsTable).set({ status: "expired" }).where(eq(pinPaymentSessionsTable.id, id));
-    res.status(410).json({ status: "ERROR", reason: "Session expired — please tap your card again" });
+    res.status(410).json({ status: "ERROR", reason: "Session expired - please tap your card again" });
     return;
   }
   if (session.status === "failed") {
-    res.status(403).json({ status: "ERROR", reason: "Card is locked — unlock it in the bitPOS app" });
+    res.status(403).json({ status: "ERROR", reason: "Card is locked - unlock it in the bitPOS app" });
     return;
   }
 
@@ -66,12 +66,12 @@ router.post("/pin-session/:id/authorize", async (req, res): Promise<void> => {
 
   if (!card?.pinHash) { res.status(409).json({ status: "ERROR", reason: "Card PIN not configured" }); return; }
   if (card.status !== "active") {
-    res.status(403).json({ status: "ERROR", reason: `Card is ${card.status} — check the bitPOS app` });
+    res.status(403).json({ status: "ERROR", reason: `Card is ${card.status} - check the bitPOS app` });
     return;
   }
   if (card.pinLockedAt) {
     await db.update(pinPaymentSessionsTable).set({ status: "failed" }).where(eq(pinPaymentSessionsTable.id, id));
-    res.status(403).json({ status: "ERROR", reason: "Card is locked — unlock it in the bitPOS app" });
+    res.status(403).json({ status: "ERROR", reason: "Card is locked - unlock it in the bitPOS app" });
     return;
   }
 
@@ -103,7 +103,7 @@ router.post("/pin-session/:id/authorize", async (req, res): Promise<void> => {
       await db.update(cardsTable).set({ pinFailCount: newCardFailCount, pinLockedAt: new Date() }).where(eq(cardsTable.id, session.cardId));
       await db.update(pinPaymentSessionsTable).set({ status: "failed", pinFailCount: newSessionFailCount }).where(eq(pinPaymentSessionsTable.id, id));
       logger.warn({ sessionId: id, cardId: session.cardId }, "Card PIN locked via hosted session after 3 failures");
-      res.status(403).json({ status: "ERROR", reason: "Card is now locked — unlock it in the bitPOS app." });
+      res.status(403).json({ status: "ERROR", reason: "Card is now locked - unlock it in the bitPOS app." });
     } else {
       await db.update(cardsTable).set({ pinFailCount: newCardFailCount }).where(eq(cardsTable.id, session.cardId));
       await db.update(pinPaymentSessionsTable).set({ pinFailCount: newSessionFailCount }).where(eq(pinPaymentSessionsTable.id, id));
@@ -122,7 +122,7 @@ router.post("/pin-session/:id/authorize", async (req, res): Promise<void> => {
     .returning({ id: pinPaymentSessionsTable.id });
 
   if (!claimed) {
-    res.status(409).json({ status: "PENDING", reason: "Payment already in progress — please wait" });
+    res.status(409).json({ status: "PENDING", reason: "Payment already in progress - please wait" });
     return;
   }
 

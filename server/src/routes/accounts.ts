@@ -74,7 +74,7 @@ router.get("/accounts/:id/lightning-address", requireAccountAccess, async (req, 
   res.json({ lightningAddress: `${entity.handle}@${DOMAIN}` });
 });
 
-// POST /accounts/:id/invoice — generate receive invoice
+// POST /accounts/:id/invoice - generate receive invoice
 router.post("/accounts/:id/invoice", requireAccountAccess, async (req, res): Promise<void> => {
   const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const { amountSats, memo } = req.body ?? {};
@@ -103,7 +103,7 @@ router.post("/accounts/:id/invoice", requireAccountAccess, async (req, res): Pro
   });
 });
 
-// POST /accounts/:id/fund — alias for /invoice
+// POST /accounts/:id/fund - alias for /invoice
 router.post("/accounts/:id/fund", requireAccountAccess, async (req, res): Promise<void> => {
   const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const { amountSats, memo } = req.body ?? {};

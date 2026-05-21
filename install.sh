@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# bitPOS — Self-Hosted Lightning POS + Bolt Card Wallet
+# bitPOS - Self-Hosted Lightning POS + Bolt Card Wallet
 # One-line install: curl -sSL https://bitpos.app/install.sh | bash
 
 echo ""
@@ -55,7 +55,7 @@ SESSION_SECRET="$(openssl rand -hex 32 2>/dev/null || head -c 32 /dev/urandom | 
 ENCRYPTION_KEY="$(openssl rand -hex 16 2>/dev/null || head -c 16 /dev/urandom | xxd -p)"
 
 # Write .env
-# SHOP_INSTANCE_SECRET is intentionally omitted — the stable shared secret
+# SHOP_INSTANCE_SECRET is intentionally omitted - the stable shared secret
 # is baked into the Docker image and verified by bitpos.app automatically.
 cat > .env <<ENVEOF
 NWC_URL=${NWC_URL}

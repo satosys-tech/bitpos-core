@@ -5,7 +5,7 @@ import { logger } from "./logger.js";
 const NWC_URL = process.env.NWC_URL;
 
 function getClient(): NWCClient {
-  if (!NWC_URL) throw new Error("NWC_URL is not configured — set NWC_URL environment variable");
+  if (!NWC_URL) throw new Error("NWC_URL is not configured - set NWC_URL environment variable");
   return new NWCClient({ nostrWalletConnectUrl: NWC_URL });
 }
 

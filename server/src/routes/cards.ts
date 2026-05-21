@@ -120,7 +120,7 @@ router.patch("/cards/:id", requireCardAccess, async (req, res): Promise<void> =>
   res.json(card);
 });
 
-// POST /api/cards/:id/provision — generate a fresh provision token for an existing card
+// POST /api/cards/:id/provision - generate a fresh provision token for an existing card
 router.post("/cards/:id/provision", requireCardAccess, async (req, res): Promise<void> => {
   const cardId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 
