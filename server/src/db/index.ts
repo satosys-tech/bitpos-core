@@ -45,7 +45,7 @@ export const accountsTable = pgTable("accounts", {
 
 export const transactionDirectionEnum = pgEnum("transaction_direction", ["in", "out"]);
 export const transactionTypeEnum = pgEnum("transaction_type", [
-  "receive", "send", "internal_receive", "internal_send", "yield", "swap", "swap_refund", "fee",
+  "receive", "send",
 ]);
 export const transactionStatusEnum = pgEnum("transaction_status", ["pending", "completed", "failed"]);
 
@@ -189,9 +189,7 @@ export async function runMigrations(): Promise<void> {
     EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
     DO $$ BEGIN
-      CREATE TYPE transaction_type AS ENUM (
-        'receive', 'send', 'internal_receive', 'internal_send', 'yield', 'swap', 'swap_refund', 'fee'
-      );
+      CREATE TYPE transaction_type AS ENUM ('receive', 'send');
     EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
     DO $$ BEGIN

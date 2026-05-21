@@ -8,6 +8,7 @@ import bcrypt from "bcryptjs";
 import { db, entitiesTable, accountsTable } from "../db/index.js";
 import { signToken, signRefreshToken } from "../lib/auth.js";
 import { isSetupComplete } from "../lib/bootstrap.js";
+import { getBalance, isConfigured } from "../lib/nwc.js";
 import { logger } from "../lib/logger.js";
 
 const router: IRouter = Router();
@@ -15,6 +16,22 @@ const router: IRouter = Router();
 router.get("/setup-status", async (_req, res): Promise<void> => {
   const configured = await isSetupComplete();
   res.json({ configured });
+});
+
+// GET /api/nwc-status — live check that the NWC wallet is reachable
+router.get("/nwc-status", async (_req, res): Promise<void> => {
+  if (!isConfigured()) {
+    res.json({ connected: false, error: "NWC_URL is not set" });
+    return;
+  }
+  try {
+    const { balanceSats } = await getBalance();
+    res.json({ connected: true, balanceSats });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.warn({ err }, "NWC health check failed");
+    res.json({ connected: false, error: msg });
+  }
 });
 
 router.post("/setup", async (req, res): Promise<void> => {

@@ -4,7 +4,7 @@ set -euo pipefail
 # bitPOS — Self-Hosted Lightning POS + Bolt Card Wallet
 # One-line install: curl -sSL https://bitpos.app/install.sh | bash
 
-REPO_URL="https://raw.githubusercontent.com/bitpos/bitpos/main"
+REPO_URL="https://raw.githubusercontent.com/satosys-tech/bitpos-core/main"
 COMPOSE_FILE="docker-compose.yml"
 ENV_FILE=".env"
 
