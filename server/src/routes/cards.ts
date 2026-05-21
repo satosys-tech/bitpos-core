@@ -120,6 +120,26 @@ router.patch("/cards/:id", requireCardAccess, async (req, res): Promise<void> =>
   res.json(card);
 });
 
+// POST /api/cards/:id/provision — generate a fresh provision token for an existing card
+router.post("/cards/:id/provision", requireCardAccess, async (req, res): Promise<void> => {
+  const cardId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+  const provisionToken = randomBytes(24).toString("hex");
+  const provisionTokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+  const [card] = await db
+    .update(cardsTable)
+    .set({ provisionToken, provisionTokenExpiresAt, updatedAt: new Date() })
+    .where(eq(cardsTable.id, cardId))
+    .returning({ id: cardsTable.id });
+
+  if (!card) { res.status(404).json({ error: "Card not found" }); return; }
+
+  const provisionUrl = `https://${DOMAIN}/api/provision/${provisionToken}`;
+  logger.info({ cardId }, "Bolt Card re-provision token generated");
+  res.json({ provisionUrl });
+});
+
 // POST /api/cards/:id/keys (PIN-gated)
 router.post("/cards/:id/keys", requireCardAccess, async (req, res): Promise<void> => {
   const cardId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;

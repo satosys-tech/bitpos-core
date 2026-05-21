@@ -1,10 +1,14 @@
 import jwt from "jsonwebtoken";
+import { randomBytes } from "crypto";
 
 if (!process.env.SESSION_SECRET) {
-  throw new Error("SESSION_SECRET environment variable is required");
+  console.warn(
+    "[bitpos] SESSION_SECRET is not set — using a randomly generated secret. " +
+    "Sessions will be invalidated on every restart. Set SESSION_SECRET for persistence."
+  );
 }
 
-const JWT_SECRET = process.env.SESSION_SECRET;
+const JWT_SECRET = process.env.SESSION_SECRET ?? randomBytes(32).toString("hex");
 const ACCESS_EXPIRY = "1h";
 const REFRESH_EXPIRY = "30d";
 

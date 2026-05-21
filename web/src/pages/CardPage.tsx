@@ -154,7 +154,7 @@ export default function CardPage() {
                     <p>Daily: <span className="text-foreground font-mono">{card.dailyLimitSats.toLocaleString()} sats</span></p>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <button onClick={(e) => { e.stopPropagation(); setSelectedId(card.id); setProvisionUrl(`${window.location.origin}/api/provision/${card.id}`); setModal("provision"); }}
+                    <button onClick={async (e) => { e.stopPropagation(); try { const data = await apiPost<{ provisionUrl: string }>(`/api/cards/${card.id}/provision`); setSelectedId(card.id); setProvisionUrl(data.provisionUrl); setModal("provision"); } catch { alert("Failed to generate provision token"); } }}
                       className="flex items-center gap-2 justify-center bg-muted rounded-xl py-2.5 text-xs font-medium hover:bg-muted/80 transition-colors">
                       <RefreshCw className="w-3.5 h-3.5" /> Re-provision
                     </button>

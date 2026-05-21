@@ -13,9 +13,13 @@ import {
 
 const { Pool } = pkg;
 
-const DATABASE_URL = process.env.DATABASE_URL;
-if (!DATABASE_URL) {
-  throw new Error("DATABASE_URL environment variable is required");
+const DATABASE_URL = process.env.DATABASE_URL ?? "postgresql://postgres:postgres@localhost:5432/bitpos";
+
+if (!process.env.DATABASE_URL) {
+  console.warn(
+    "[bitpos] DATABASE_URL is not set — defaulting to postgresql://postgres:postgres@localhost:5432/bitpos. " +
+    "Set DATABASE_URL to connect to your Postgres instance."
+  );
 }
 
 const pool = new Pool({ connectionString: DATABASE_URL });
@@ -180,11 +184,19 @@ export async function runMigrations(): Promise<void> {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
-    CREATE TYPE IF NOT EXISTS transaction_direction AS ENUM ('in', 'out');
-    CREATE TYPE IF NOT EXISTS transaction_type AS ENUM (
-      'receive', 'send', 'internal_receive', 'internal_send', 'yield', 'swap', 'swap_refund', 'fee'
-    );
-    CREATE TYPE IF NOT EXISTS transaction_status AS ENUM ('pending', 'completed', 'failed');
+    DO $$ BEGIN
+      CREATE TYPE transaction_direction AS ENUM ('in', 'out');
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+    DO $$ BEGIN
+      CREATE TYPE transaction_type AS ENUM (
+        'receive', 'send', 'internal_receive', 'internal_send', 'yield', 'swap', 'swap_refund', 'fee'
+      );
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+    DO $$ BEGIN
+      CREATE TYPE transaction_status AS ENUM ('pending', 'completed', 'failed');
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
     CREATE TABLE IF NOT EXISTS cards (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -278,9 +290,11 @@ export async function runMigrations(): Promise<void> {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
-    CREATE TYPE IF NOT EXISTS pin_session_status AS ENUM (
-      'pending', 'processing', 'authorized', 'expired', 'failed'
-    );
+    DO $$ BEGIN
+      CREATE TYPE pin_session_status AS ENUM (
+        'pending', 'processing', 'authorized', 'expired', 'failed'
+      );
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
     CREATE TABLE IF NOT EXISTS pin_payment_sessions (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

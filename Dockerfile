@@ -40,4 +40,4 @@ EXPOSE 3000
 HEALTHCHECK --interval=15s --timeout=5s --start-period=30s \
   CMD wget -qO- http://localhost:3000/api/healthz || exit 1
 
-CMD ["node", "server/dist/index.js"]
+CMD ["node", "server/dist/index.mjs"]
