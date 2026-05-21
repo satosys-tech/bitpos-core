@@ -35,7 +35,7 @@ Then open [http://localhost:3000](http://localhost:3000) and complete the 30-sec
 
 ## NWC Setup
 
-1. Create an [Alby Hub](https://getalby.com/alby-hub) account (or run it locally)
+1. Create an [Alby Hub](https://getalby.com/alby-hub) account.
 2. Go to **Apps** → **Add App** → choose "Custom permissions"
 3. Grant: **Pay Invoice**, **Make Invoice**, **Lookup Invoice**
 4. Copy the `nostr+walletconnect://...` connection string
@@ -64,7 +64,7 @@ The **Card Shop** lets you order physical NFC Bolt Cards directly from your bitP
 
 - Browse designs and get a shipping quote
 - Enter your shipping address - **this is sent to bitpos.app** for fulfillment
-- Payment is deducted from your connected wallet and sent to bitpos.app
+- Card orders are sent to bitpos.app
 - You receive tracking updates in the Orders section
 
 Bolt Cards arrived: scan the QR code in the **Bolt Card** tab of your app to program your card in seconds.
@@ -185,4 +185,4 @@ Pull requests welcome! Please open an issue or discussion before large changes.
 
 MIT - see [LICENSE](LICENSE)
 
-The hosted bitpos.app service (fulfillment, card shop, hosted accounts) is separate and proprietary. This repository is the self-hosted open-source edition only.
+The hosted bitpos.app service (fulfillment, card shop, hosted accounts) runs on this Core. This repository is the self-hosted open-source edition.
