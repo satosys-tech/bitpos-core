@@ -12,10 +12,10 @@ import { logger } from "./logger.js";
 const SHOP_API_URL = process.env.SHOP_API_URL ?? "https://bitpos.app/api/shop";
 
 // Shared secret for shop proxy authentication.
-// A stable default is baked into the image for convenience; operators SHOULD override
-// SHOP_INSTANCE_SECRET with a deployment-specific value (the install.sh generates one).
-const SHOP_INSTANCE_SECRET =
-  process.env.SHOP_INSTANCE_SECRET ?? "bitpos-oss-default-v1";
+// Set SHOP_INSTANCE_SECRET in your .env - the install.sh generates one automatically.
+// If unset, shop proxy requests are sent unsigned and bitpos.app will treat the
+// instance as unauthenticated (card designs still load; ordering may be restricted).
+const SHOP_INSTANCE_SECRET = process.env.SHOP_INSTANCE_SECRET ?? "";
 
 const OSS_VERSION = "1.0.0";
 
