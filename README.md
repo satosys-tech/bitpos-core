@@ -1,4 +1,4 @@
-# bitPOS - Self-Hosted Lightning POS + Bolt Card Wallet
+# bitPOS — Self-Hosted Lightning POS + Bolt Card Wallet
 
 The open-source, single-user edition of [bitPOS](https://bitpos.app). Run your own Lightning point-of-sale terminal and Bolt Card issuing wallet in one Docker container.
 
@@ -10,7 +10,7 @@ curl -sSL https://bitpos.app/install.sh | bash
 
 That's it. The installer will ask for your NWC connection string and your domain, then launch everything with Docker Compose.
 
-Or, for a manual one-liner:
+Or, for a manual one-liner (embedded Postgres included):
 
 ```bash
 docker run -d \
@@ -18,7 +18,7 @@ docker run -d \
   -e SESSION_SECRET="$(openssl rand -hex 32)" \
   -e DOMAIN="localhost:3000" \
   -p 3000:3000 \
-  ghcr.io/bitpos/bitpos:latest
+  ghcr.io/satosys-tech/bitpos-core:latest
 ```
 
 Then open [http://localhost:3000](http://localhost:3000) and complete the 30-second setup wizard.
@@ -28,20 +28,20 @@ Then open [http://localhost:3000](http://localhost:3000) and complete the 30-sec
 ## Prerequisites
 
 - **Docker** 24+ with the Compose plugin (`docker compose` — note: not `docker-compose`)
-- **An NWC-compatible wallet** - [Alby Hub](https://getalby.com/alby-hub) is recommended (self-hosted or cloud). Any wallet that supports the [Nostr Wallet Connect](https://nwc.dev) protocol works.
+- **An NWC-compatible wallet** — [Alby Hub](https://getalby.com/alby-hub) is recommended (self-hosted or cloud). Any wallet that supports the [Nostr Wallet Connect](https://nwc.dev) protocol works.
 - A domain pointing to your server (optional for local use)
 
 ---
 
 ## NWC Setup
 
-1. Create an [Alby Hub](https://getalby.com/alby-hub) account.
+1. Create an [Alby Hub](https://getalby.com/alby-hub) account (or run it locally)
 2. Go to **Apps** → **Add App** → choose "Custom permissions"
 3. Grant: **Pay Invoice**, **Make Invoice**, **Lookup Invoice**
 4. Copy the `nostr+walletconnect://...` connection string
 5. Paste it when the installer asks for `NWC_URL`
 
-> Your NWC string is a secret. It is stored only in `.env` on your server and passed as an environment variable - it never appears in the UI.
+> Your NWC string is a secret. It is stored only in `.env` on your server and passed as an environment variable — it never appears in the UI.
 
 ---
 
@@ -49,11 +49,12 @@ Then open [http://localhost:3000](http://localhost:3000) and complete the 30-sec
 
 When you first open bitPOS in your browser, you'll see the **Setup Wizard**:
 
-1. Choose a Lightning handle (becomes `handle@yourdomain` for receiving payments)
-2. Set a 4-digit PIN - this is the only credential you'll use to unlock the app
-3. Done - your wallet is ready
+1. bitPOS verifies your NWC wallet is reachable and shows your balance
+2. Choose a Lightning handle (becomes `handle@yourdomain` for receiving payments)
+3. Set a 4-digit PIN — this is the only credential you'll use to unlock the app
+4. Done — your wallet is ready
 
-The PIN is bcrypt-hashed in the database. There is no password reset - if you lose your PIN, reset the database and run setup again.
+The PIN is bcrypt-hashed in the database. There is no password reset — if you lose your PIN, reset the database and run setup again.
 
 ---
 
@@ -62,7 +63,8 @@ The PIN is bcrypt-hashed in the database. There is no password reset - if you lo
 The **Card Shop** lets you order physical NFC Bolt Cards directly from your bitPOS instance. Orders are fulfilled by bitpos.app:
 
 - Browse designs and get a shipping quote
-- Enter your shipping address - **this is sent to bitpos.app** for fulfillment
+- Enter your shipping address — **this is sent to bitpos.app** for fulfillment
+- Payment is deducted from your connected wallet and sent to bitpos.app
 - You receive tracking updates in the Orders section
 
 Bolt Cards arrived: scan the QR code in the **Bolt Card** tab of your app to program your card in seconds.
@@ -74,7 +76,7 @@ Bolt Cards arrived: scan the QR code in the **Bolt Card** tab of your app to pro
 ```yaml
 services:
   bitpos:
-    image: ghcr.io/bitpos/bitpos:latest
+    image: ghcr.io/satosys-tech/bitpos-core:latest
     ports:
       - "3000:3000"
     environment:
@@ -84,6 +86,7 @@ services:
       ENCRYPTION_KEY: ""                      # Recommended — run: openssl rand -hex 16
       DATABASE_URL: "postgresql://..."        # Required (provided by db service below)
       SHOP_API_URL: "https://bitpos.app/api/shop"  # Optional override
+      SHOP_INSTANCE_SECRET: "your-secret"    # Set to a unique secret per deployment
     depends_on:
       db:
         condition: service_healthy
@@ -105,14 +108,16 @@ volumes:
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `NWC_URL` | ✅ | - | Nostr Wallet Connect string from your Lightning wallet |
-| `SESSION_SECRET` | ✅ | - | Random string for JWT signing (`openssl rand -hex 32`) |
-| `DOMAIN` | ✅ | - | Your public hostname (used in LNURL callbacks and card URLs) |
-| `DATABASE_URL` | ✅ | - | PostgreSQL connection string |
+| `NWC_URL` | ✅ | — | Nostr Wallet Connect string from your Lightning wallet |
+| `SESSION_SECRET` | ✅ | random (insecure) | Random string for JWT signing (`openssl rand -hex 32`) |
+| `DOMAIN` | ✅ | — | Your public hostname (used in LNURL callbacks and card URLs) |
+| `DATABASE_URL` | ✅ | embedded Postgres | PostgreSQL connection string (docker run uses built-in Postgres) |
 | `ENCRYPTION_KEY` | Recommended | random | 32-char hex for AES card key encryption at rest |
 | `PORT` | ❌ | `3000` | HTTP port the server listens on |
 | `SHOP_API_URL` | ❌ | `https://bitpos.app/api/shop` | Fulfillment API base URL |
-| `SHOP_INSTANCE_SECRET` | ❌ | built-in | HMAC secret for shop proxy authentication |
+| `SHOP_INSTANCE_SECRET` | Recommended | random (per start) | HMAC secret for shop proxy authentication — set a stable value |
+
+> **Important:** `SESSION_SECRET` and `SHOP_INSTANCE_SECRET` default to random values when not set. This means sessions and shop signatures are invalidated on every restart. Always set these in production.
 
 ---
 
@@ -135,18 +140,18 @@ Yes, any NWC-compatible wallet works. Alby Hub is recommended because it support
 All transaction and balance data lives in your local Postgres database. The only data sent externally is shop orders (shipping address + payment) to bitpos.app for fulfillment.
 
 **What happens if I lose my PIN?**  
-Delete the database volume and run setup again. Your wallet funds are safe - they live in your connected Lightning wallet (NWC), not in bitPOS.
+Delete the database volume and run setup again. Your wallet funds are safe — they live in your connected Lightning wallet (NWC), not in bitPOS.
 
 **Can I run this without Docker?**  
 Yes. Set `DATABASE_URL` and `NWC_URL` in your environment and run:
 ```bash
 cd server && npm install && npm run build
-node dist/index.js
+node dist/index.mjs
 ```
 The web build must be placed in `../public/` relative to `server/`.
 
 **What is the LNURL address?**  
-When `DOMAIN` is set correctly, your Lightning address is `handle@yourdomain`. Anyone can send sats to this address - they land directly in your connected wallet.
+When `DOMAIN` is set correctly, your Lightning address is `handle@yourdomain`. Anyone can send sats to this address — they land directly in your connected wallet.
 
 ---
 
@@ -159,17 +164,17 @@ bitPOS OSS
 │   ├── src/lib/   NWC, boltcard, payment, shopProxy, ...
 │   └── src/routes/
 ├── web/           React + Vite PWA (served statically)
-└── Dockerfile     Multi-stage build
+└── Dockerfile     Multi-stage build (embeds Postgres for docker run mode)
 ```
 
-The Docker image builds both, then runs a single `node` process that serves the API at `/api/*` and the PWA at everything else.
+The Docker image builds both, then runs a single process that serves the API at `/api/*` and the PWA at everything else. When `DATABASE_URL` is not set, an embedded Postgres instance is started automatically.
 
 ---
 
 ## Contributing
 
-- **Bugs & feature requests**: [GitHub Issues](https://github.com/bitpos/bitpos/issues)
-- **Discussion**: [GitHub Discussions](https://github.com/bitpos/bitpos/discussions)
+- **Bugs & feature requests**: [GitHub Issues](https://github.com/satosys-tech/bitpos-core/issues)
+- **Discussion**: [GitHub Discussions](https://github.com/satosys-tech/bitpos-core/discussions)
 - **Nostr**: npub... (follow for updates)
 
 Pull requests welcome! Please open an issue or discussion before large changes.
@@ -178,6 +183,6 @@ Pull requests welcome! Please open an issue or discussion before large changes.
 
 ## License
 
-MIT - see [LICENSE](LICENSE)
+MIT — see [LICENSE](LICENSE)
 
-The hosted bitpos.app service is separate and is based on this open-source repository.
+The hosted bitpos.app service (fulfillment, card shop, hosted accounts) is separate and proprietary. This repository is the self-hosted open-source edition only.
