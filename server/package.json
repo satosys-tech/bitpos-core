@@ -13,6 +13,7 @@
   "dependencies": {
     "@getalby/sdk": "^7.0.0",
     "axios": "^1.6.0",
+    "bech32": "^2.0.0",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2",
@@ -38,7 +39,7 @@
     "@types/pg": "^8.11.6",
     "@types/serve-static": "^1.15.7",
     "drizzle-kit": "^0.31.0",
-    "esbuild": "^0.27.3",
+    "esbuild": "^0.25.8",
     "esbuild-plugin-pino": "^2.3.3",
     "pino-pretty": "^13",
     "typescript": "^5.8.0"

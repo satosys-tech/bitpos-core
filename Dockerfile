@@ -20,6 +20,12 @@ RUN npm run build
 
 # ── Stage 3: Production image ─────────────────────────────────────────────────
 FROM node:20-alpine AS runner
+
+# Install Postgres + su-exec for the embedded single-container mode
+RUN apk add --no-cache postgresql15 postgresql15-client su-exec \
+    && mkdir -p /run/postgresql \
+    && chown -R postgres:postgres /run/postgresql
+
 WORKDIR /app
 
 # Install production server deps
@@ -32,12 +38,16 @@ COPY --from=server-builder /build/server/dist ./server/dist
 # Copy built web PWA into the static public dir
 COPY --from=web-builder /build/web/dist ./public
 
+# Copy the entrypoint script
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 ENV NODE_ENV=production
 ENV PORT=3000
 
 EXPOSE 3000
 
-HEALTHCHECK --interval=15s --timeout=5s --start-period=30s \
+HEALTHCHECK --interval=15s --timeout=5s --start-period=60s \
   CMD wget -qO- http://localhost:3000/api/healthz || exit 1
 
-CMD ["node", "server/dist/index.mjs"]
+ENTRYPOINT ["/entrypoint.sh"]
