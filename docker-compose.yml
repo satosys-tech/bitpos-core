@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   bitpos:
-    image: ghcr.io/bitpos/bitpos:latest
+    image: ghcr.io/satosys-tech/bitpos-core:latest
     # Or build locally:
     # build: .
     restart: unless-stopped
