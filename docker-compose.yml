@@ -1,0 +1,57 @@
+version: "3.9"
+
+services:
+  bitpos:
+    image: ghcr.io/bitpos/bitpos:latest
+    # Or build locally:
+    # build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # Required: your Alby / NWC-compatible wallet connection string
+      NWC_URL: "${NWC_URL}"
+      # Required: a random string used to sign JWT sessions
+      SESSION_SECRET: "${SESSION_SECRET:-change-me-in-production}"
+      # Required: your public domain (used for LNURL callbacks)
+      DOMAIN: "${DOMAIN:-localhost:3000}"
+      # Optional: AES encryption key for card keys at rest (32 hex chars)
+      # Generate: openssl rand -hex 16
+      ENCRYPTION_KEY: "${ENCRYPTION_KEY:-}"
+      # Optional: override the bitpos.app fulfillment API URL
+      SHOP_API_URL: "${SHOP_API_URL:-https://bitpos.app/api/shop}"
+      # Optional: HMAC secret for shop proxy authentication
+      SHOP_INSTANCE_SECRET: "${SHOP_INSTANCE_SECRET:-bitpos-oss-default-instance-key-v1}"
+      # Database
+      DATABASE_URL: "postgresql://bitpos:bitpos@db:5432/bitpos"
+      NODE_ENV: "production"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - bitpos-network
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bitpos
+      POSTGRES_USER: bitpos
+      POSTGRES_PASSWORD: bitpos
+    volumes:
+      - bitpos-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bitpos -d bitpos"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - bitpos-network
+
+volumes:
+  bitpos-db:
+    driver: local
+
+networks:
+  bitpos-network:
+    driver: bridge
