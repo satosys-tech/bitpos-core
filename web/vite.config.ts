@@ -3,7 +3,13 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
+// VITE_BASE lets the dev script set a subpath (e.g. /oss/) for Replit's
+// path-based proxy. In a real Docker deployment VITE_BASE is unset so the
+// app builds at the root (/) as normal.
+const base = process.env.VITE_BASE ?? "/";
+
 export default defineConfig({
+  base,
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
