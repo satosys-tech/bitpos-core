@@ -70,9 +70,15 @@ export default function SetupPage() {
 
   useEffect(() => {
     apiGet<SetupStatus>("/api/setup-status")
-      .then((s) => setSetupStatus(s))
+      .then((s) => {
+        if (s.configured) {
+          navigate("/login", { replace: true });
+          return;
+        }
+        setSetupStatus(s);
+      })
       .catch(() => {});
-  }, []);
+  }, [navigate]);
 
   const envNwcConfigured = setupStatus?.nwcConfigured ?? false;
   const lnAddressHost = setupStatus?.lnAddressHost ?? "yourdomain";
