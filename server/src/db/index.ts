@@ -145,6 +145,12 @@ export const pinSessionStatusEnum = pgEnum("pin_session_status", [
   "pending", "processing", "authorized", "expired", "failed",
 ]);
 
+export const settingsTable = pgTable("settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const pinPaymentSessionsTable = pgTable("pin_payment_sessions", {
   id: uuid("id").primaryKey().defaultRandom(),
   cardId: uuid("card_id").notNull().references(() => cardsTable.id),
@@ -293,6 +299,12 @@ export async function runMigrations(): Promise<void> {
         'pending', 'processing', 'authorized', 'expired', 'failed'
       );
     EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
 
     CREATE TABLE IF NOT EXISTS pin_payment_sessions (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
