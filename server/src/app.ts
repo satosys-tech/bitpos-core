@@ -8,6 +8,7 @@ import lnurlwRouter from "./routes/lnurlw.js";
 import pinSessionsRouter from "./routes/pin-sessions.js";
 import { logger } from "./lib/logger.js";
 import { NwcUnavailableError } from "./lib/nwc.js";
+import { publicBaseUrl } from "./lib/domain.js";
 
 const app: Express = express();
 
@@ -24,6 +25,10 @@ app.use(
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
 const CORS_ORIGINS = (process.env.CORS_ORIGINS ?? "http://localhost:3000")
   .split(",").map((o) => o.trim()).filter(Boolean);
+// Always allow the server's own public URL — critical for Cloudflare Tunnel
+// where the dynamic trycloudflare.com domain isn't known at container build time.
+const ownOrigin = publicBaseUrl();
+if (!CORS_ORIGINS.includes(ownOrigin)) CORS_ORIGINS.push(ownOrigin);
 // Wildcard suffix patterns (e.g. "*.replit.dev") supported in CORS_ORIGINS.
 const CORS_WILDCARDS = CORS_ORIGINS.filter((o) => o.startsWith("*.")).map((o) => o.slice(1));
 
