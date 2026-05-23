@@ -81,7 +81,7 @@ if [ -n "${CLOUDFLARE_TUNNEL_TOKEN:-}" ]; then
   export TUNNEL_MODE="named"
   cloudflared tunnel --no-autoupdate run --token "${CLOUDFLARE_TUNNEL_TOKEN}" &
 
-elif [ -n "${DOMAIN:-}" ]; then
+elif [ -n "${DOMAIN:-}" ] && case "${DOMAIN}" in localhost|localhost:*) false ;; *) true ;; esac; then
   echo "[bitpos] Manual domain mode - domain: ${DOMAIN}"
   export TUNNEL_MODE="manual"
 
