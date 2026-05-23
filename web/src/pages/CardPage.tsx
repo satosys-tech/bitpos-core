@@ -20,24 +20,45 @@ interface CardInfo {
   createdAt: string;
 }
 
+type WipeKeys = {
+  protocol_name: string;
+  protocol_version: number;
+  version: number;
+  action: string;
+  k0: string; k1: string; k2: string; k3: string; k4: string;
+};
+
+type WipeData = { wipeKeys: WipeKeys; newProvisionUrl: string };
+
 function shortId(id: string) { return id.replace(/-/g, "").slice(-8).replace(/(.{4})(.{4})/, "$1 $2"); }
 function label(card: CardInfo) { return card.name ?? shortId(card.id); }
 
 export default function CardPage() {
-  const { account, entity } = useAuth();
+  const { account } = useAuth();
   const [cards, setCards] = useState<CardInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [issuing, setIssuing] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [modal, setModal] = useState<"provision" | "keys" | "pin" | null>(null);
+
+  // Provision modal
+  const [modal, setModal] = useState<"provision" | "keys" | "wipe-pin" | "wipe-show" | "wipe-done" | null>(null);
   const [provisionUrl, setProvisionUrl] = useState<string | null>(null);
+  const provisionCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Keys modal
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState("");
   const [cardKeys, setCardKeys] = useState<{ k0: string; k1: string; k2: string; k3: string; k4: string; lnurlwTemplate: string } | null>(null);
   const [showKeys, setShowKeys] = useState(false);
   const [keysLoading, setKeysLoading] = useState(false);
-  const [wipeData, setWipeData] = useState<{ wipeKeys: unknown; newProvisionUrl: string } | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Wipe / cancel modal
+  const [wipeTargetId, setWipeTargetId] = useState<string | null>(null);
+  const [wipePin, setWipePin] = useState("");
+  const [wipePinError, setWipePinError] = useState("");
+  const [wipePinLoading, setWipePinLoading] = useState(false);
+  const [wipeData, setWipeData] = useState<WipeData | null>(null);
+  const wipeCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const selectedCard = cards.find((c) => c.id === selectedId) ?? null;
 
@@ -50,11 +71,23 @@ export default function CardPage() {
 
   useEffect(() => { refresh(); }, [refresh]);
 
+  // Render provision QR
   useEffect(() => {
-    if (provisionUrl && canvasRef.current) {
-      QRCode.toCanvas(canvasRef.current, provisionUrl, { width: 220, margin: 2, color: { dark: "#ffffff", light: "#0a0a0a" } }).catch(() => {});
+    if (provisionUrl && provisionCanvasRef.current) {
+      QRCode.toCanvas(provisionCanvasRef.current, provisionUrl, {
+        width: 220, margin: 2, color: { dark: "#ffffff", light: "#0a0a0a" },
+      }).catch(() => {});
     }
   }, [provisionUrl]);
+
+  // Render wipe QR (wipeKeys JSON)
+  useEffect(() => {
+    if (wipeData && wipeCanvasRef.current) {
+      QRCode.toCanvas(wipeCanvasRef.current, JSON.stringify(wipeData.wipeKeys), {
+        width: 220, margin: 2, color: { dark: "#ffffff", light: "#0a0a0a" },
+      }).catch(() => {});
+    }
+  }, [wipeData]);
 
   const issueCard = async () => {
     if (!account?.id) return;
@@ -74,21 +107,16 @@ export default function CardPage() {
     setCards((cs) => cs.map((c) => c.id === card.id ? { ...c, status: newStatus } : c));
   };
 
-  const cancelCard = async (cardId: string) => {
-    if (!confirm("Cancel this card? This cannot be undone.")) return;
-    await apiDelete(`/api/cards/${cardId}`);
-    setCards((cs) => cs.filter((c) => c.id !== cardId));
-    if (selectedId === cardId) setSelectedId(null);
-  };
-
   const viewKeys = async (cardId: string) => {
-    setPinError(""); setPin(""); setCardKeys(null); setModal("keys");
+    setPinError(""); setPin(""); setCardKeys(null);
+    setSelectedId(cardId);
+    setModal("keys");
   };
 
   const submitViewKeys = async (p: string) => {
     setKeysLoading(true);
     try {
-      const data = await apiPost<typeof cardKeys>(`/api/cards/${cardId}/keys`, { pin: p });
+      const data = await apiPost<typeof cardKeys>(`/api/cards/${selectedId}/keys`, { pin: p });
       setCardKeys(data);
     } catch { setPinError("Incorrect PIN"); setPin(""); } finally { setKeysLoading(false); }
   };
@@ -102,7 +130,55 @@ export default function CardPage() {
     } catch (e) { alert(e instanceof Error ? e.message : "Failed to unlock"); }
   };
 
-  const cardId = selectedId ?? "";
+  // Step 1: open wipe PIN modal
+  const openCancelFlow = (cardId: string) => {
+    setWipeTargetId(cardId);
+    setWipePin("");
+    setWipePinError("");
+    setWipeData(null);
+    setModal("wipe-pin");
+  };
+
+  // Step 2: submit PIN → call wipe endpoint → show QR
+  const submitWipePin = async (p: string) => {
+    if (!wipeTargetId) return;
+    setWipePinLoading(true);
+    setWipePinError("");
+    try {
+      const data = await apiPost<WipeData>(`/api/cards/${wipeTargetId}/wipe`, { pin: p });
+      setWipeData(data);
+      setModal("wipe-show");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Failed";
+      setWipePinError(msg.includes("PIN") ? "Incorrect PIN. Try again." : msg);
+      setWipePin("");
+    } finally { setWipePinLoading(false); }
+  };
+
+  // Step 3: after "Done" in wipe modal → ask if they want to cancel
+  const proceedToCancel = () => setModal("wipe-done");
+
+  // Step 4: actually delete the card record
+  const confirmCancel = async () => {
+    if (!wipeTargetId) return;
+    try {
+      await apiDelete(`/api/cards/${wipeTargetId}`);
+      setCards((cs) => cs.filter((c) => c.id !== wipeTargetId));
+      if (selectedId === wipeTargetId) setSelectedId(null);
+    } catch { /* ignore */ }
+    setModal(null);
+    setWipeTargetId(null);
+    setWipeData(null);
+  };
+
+  const closeWipeFlow = () => {
+    setModal(null);
+    setWipeTargetId(null);
+    setWipeData(null);
+    setWipePin("");
+    setWipePinError("");
+    refresh();
+  };
 
   return (
     <div className="px-5 pt-8 pb-6 safe-top min-h-full">
@@ -172,7 +248,7 @@ export default function CardPage() {
                         <Unlock className="w-3.5 h-3.5" /> Unlock PIN
                       </button>
                     ) : (
-                      <button onClick={(e) => { e.stopPropagation(); cancelCard(card.id); }}
+                      <button onClick={(e) => { e.stopPropagation(); openCancelFlow(card.id); }}
                         className="flex items-center gap-2 justify-center bg-destructive/10 text-destructive rounded-xl py-2.5 text-xs font-medium hover:bg-destructive/20 transition-colors">
                         <Trash2 className="w-3.5 h-3.5" /> Cancel
                       </button>
@@ -192,7 +268,7 @@ export default function CardPage() {
             <h2 className="text-lg font-bold mb-2 text-center">Provision Card</h2>
             <p className="text-xs text-muted-foreground text-center mb-4">Scan with the Bolt Card Creator app (NXP)</p>
             <div className="flex justify-center mb-4">
-              <canvas ref={canvasRef} className="rounded-xl" />
+              <canvas ref={provisionCanvasRef} className="rounded-xl" />
             </div>
             <p className="text-xs text-muted-foreground font-mono break-all text-center mb-4">{provisionUrl}</p>
             <div className="flex gap-2">
@@ -233,10 +309,87 @@ export default function CardPage() {
                 ))}
               </>
             )}
-            <button onClick={() => { setModal(null); setPin(""); setCardKeys(null); setPinError(""); }}
+            <button onClick={() => { setModal(null); setPin(""); setCardKeys(null); setPinError(""); setShowKeys(false); }}
               className="w-full mt-4 bg-muted rounded-xl py-3 text-sm font-medium hover:bg-muted/80 transition-colors">
               Close
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Wipe PIN Modal — step 1 */}
+      {modal === "wipe-pin" && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 px-5">
+          <div className="bg-card border border-border rounded-2xl p-6 max-w-sm w-full space-y-4">
+            <div>
+              <h2 className="text-lg font-bold mb-1">Cancel card</h2>
+              <p className="text-sm text-muted-foreground">
+                Enter your account PIN. This generates the wipe JSON you'll need to physically reset the NFC chip before the card record is removed.
+              </p>
+            </div>
+            {wipePinError && <p className="text-destructive text-sm text-center">{wipePinError}</p>}
+            <PinPad
+              value={wipePin}
+              onChange={(v) => { setWipePin(v); if (v.length === 4) submitWipePin(v); }}
+              disabled={wipePinLoading}
+            />
+            <button onClick={closeWipeFlow}
+              className="w-full bg-muted rounded-xl py-3 text-sm font-medium hover:bg-muted/80 transition-colors">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Wipe JSON / QR Modal — step 2 */}
+      {modal === "wipe-show" && wipeData && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 px-5">
+          <div className="bg-card border border-border rounded-2xl p-6 max-w-sm w-full space-y-4">
+            <div>
+              <h2 className="text-lg font-bold mb-1">Wipe the NFC chip</h2>
+              <p className="text-sm text-muted-foreground">
+                In <span className="text-foreground font-medium">Bolt Card NFC Creator</span>, go to <span className="text-foreground font-medium">Reset</span> → tap the NFC chip → tap <span className="text-foreground font-medium">Scan QR Code</span> and scan this.
+              </p>
+            </div>
+            <div className="flex justify-center">
+              <div className="rounded-xl overflow-hidden bg-[#0a0a0a] p-2">
+                <canvas ref={wipeCanvasRef} />
+              </div>
+            </div>
+            <button
+              onClick={() => navigator.clipboard.writeText(JSON.stringify(wipeData.wipeKeys))}
+              className="flex items-center gap-2 w-full bg-muted rounded-xl px-4 py-3 text-sm font-medium justify-center hover:bg-muted/80 transition-colors"
+            >
+              <Copy className="w-4 h-4" /> Copy wipe JSON
+            </button>
+            <button onClick={proceedToCancel}
+              className="w-full bg-primary text-primary-foreground rounded-xl py-3 text-sm font-semibold">
+              Done
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel confirm Modal — step 3 */}
+      {modal === "wipe-done" && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 px-5">
+          <div className="bg-card border border-border rounded-2xl p-6 max-w-sm w-full space-y-4">
+            <div>
+              <h2 className="text-lg font-bold mb-1">Did you wipe the card?</h2>
+              <p className="text-sm text-muted-foreground">
+                The card record is still in your dashboard. Cancel it now to remove it, or keep it if you want to retry the wipe.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={closeWipeFlow}
+                className="flex-1 rounded-xl py-3 text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80 transition-colors">
+                Keep card
+              </button>
+              <button onClick={confirmCancel}
+                className="flex-1 rounded-xl py-3 text-sm font-semibold bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors">
+                Cancel card
+              </button>
+            </div>
           </div>
         </div>
       )}
